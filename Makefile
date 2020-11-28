@@ -8,7 +8,7 @@ LIBS = -lpthread
 
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
-    OPTS += -g -O0
+    OPTS += -g -O0 -DDEBUG
 else
     OPTS += -O3
 endif

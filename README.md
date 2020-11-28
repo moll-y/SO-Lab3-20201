@@ -21,6 +21,19 @@ fin
 ```
 Con el fin de hacer el ejercicio más divertido, el programa base propuesto, también calcula los valores promedio de cada iteración de Y. 
 
+# Compilación y ejecución
+Modo DEBUG
+```
+make clean
+make DEBUG=1
+./saxpy
+```
+Modo RELEASE
+```
+make clean
+make DEBUG=0
+./saxpy
+```
 
 # Pasos sugeridos para el desarrollo del laboratorio
 1. Clone este repositorio, compile y ejecute el código, trate de entenderlo, no es difícil.

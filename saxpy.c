@@ -82,12 +82,28 @@ int main(int argc, char* argv[]){
 	}
 	a = (double)rand() / RAND_MAX;
 
+#ifdef DEBUG
+	printf("vector X= [ ");
+	for(i = 0; i < p-1; i++){
+		printf("%f, ",X[i]);
+	}
+	printf("%f ]\n",X[p-1]);
+
+	printf("vector Y= [ ");
+	for(i = 0; i < p-1; i++){
+		printf("%f, ", Y[i]);
+	}
+	printf("%f ]\n", Y[p-1]);
+
+	printf("a= %f \n", a);	
+#endif
+
 	/*
 	 *	Function to parallelize 
 	 */
 	gettimeofday(&t_start, NULL);
 	//SAXPY iterative SAXPY mfunction
-	for(it = 0; it++ < max_iters; it++){
+	for(it = 0; it < max_iters; it++){
 		for(i = 0; i < p; i++){
 			Y[i] = Y[i] + a * X[i];
 			Y_avgs[it] += Y[i];
@@ -95,6 +111,14 @@ int main(int argc, char* argv[]){
 		Y_avgs[it] = Y_avgs[it] / p;
 	}
 	gettimeofday(&t_end, NULL);
+
+#ifdef DEBUG
+	printf("RES: final vector Y= [ ");
+	for(i = 0; i < p-1; i++){
+		printf("%f, ", Y[i]);
+	}
+	printf("%f ]\n", Y[p-1]);
+#endif
 	
 	// Computing execution time
 	exec_time = (t_end.tv_sec - t_start.tv_sec) * 1000.0;  // sec to ms
