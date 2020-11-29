@@ -16,19 +16,46 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <pthread.h>
 #include <sys/time.h>
+
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+double *X, *Y, *Y_avgs;
+
+typedef struct __buf_t {
+    int min;
+    int max;
+    int it;
+    double a;
+} buf_t;
+
+void *func(void *arg) {
+    buf_t *buf;
+    double a;
+    int it, min, max;
+
+    buf = (buf_t *) arg;
+    a   = buf->a;
+    it  = buf->it;
+    min = buf->min;
+    max = buf->max;
+    for(; min < max; min++) {
+        Y[min] = Y[min] + a * X[min];
+        pthread_mutex_lock(&m);
+        Y_avgs[it] += Y[min];
+        pthread_mutex_unlock(&m);
+    }
+    return NULL;
+}
 
 int main(int argc, char* argv[]){
 	// Variables to obtain command line parameters
 	unsigned int seed = 1;
   	int p = 10000000;
-  	int n_threads = 2;
-  	int max_iters = 1000;
+  	int n_threads = 10;
+  	int max_iters = 1;
   	// Variables to perform SAXPY operation
-	double* X;
 	double a;
-	double* Y;
-	double* Y_avgs;
 	int i, it;
 	// Variables to get execution time
 	struct timeval t_start, t_end;
@@ -101,14 +128,26 @@ int main(int argc, char* argv[]){
 	/*
 	 *	Function to parallelize 
 	 */
+
+    pthread_t tid[n_threads];
+    int m = p / n_threads;
+
 	gettimeofday(&t_start, NULL);
 	//SAXPY iterative SAXPY mfunction
 	for(it = 0; it < max_iters; it++){
-		for(i = 0; i < p; i++){
-			Y[i] = Y[i] + a * X[i];
-			Y_avgs[it] += Y[i];
-		}
-		Y_avgs[it] = Y_avgs[it] / p;
+        for (i = 0; i < n_threads; i++) {
+            buf_t *buf = malloc(sizeof(buf_t));
+            buf->a   = a;
+            buf->it  = it;
+            buf->min = i*m;
+            buf->max = i*m + m;
+            pthread_create(&tid[i], NULL, func, (void *) buf);
+            free(buf);
+        }
+        for (i = 0; i < n_threads; i++) {
+            pthread_join(tid[i], NULL);
+        }
+        Y_avgs[it] = Y_avgs[it] / p;
 	}
 	gettimeofday(&t_end, NULL);
 
