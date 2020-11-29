@@ -20,26 +20,29 @@
 #include <sys/time.h>
 
 pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
-double *X, *Y, *Y_avgs;
-double a;
-int it;
+double *X, *Y, *Y_avgs, a;
+int it, p;
 
 void *
 saxpy (void *arg)
 {
   int *buf;
-  int min, max;
+  int min, max, i;
 
   buf = (int *) arg;
   min = buf[0];
   max = buf[1];
   for (; min < max; min++)
-    {
-      Y[min] = Y[min] + a * X[min];
-      pthread_mutex_lock (&mx);
-      Y_avgs[it] += Y[min];
-      pthread_mutex_unlock (&mx);
-    }
+  {
+      for (i = 0; i < p; i++)
+      {
+          pthread_mutex_lock (&mx);
+          Y[i] = Y[i] + a * X[i];
+          pthread_mutex_unlock (&mx);
+          Y_avgs[min] += Y[i];
+      }
+      Y_avgs[min] = Y_avgs[min] / p;
+  }
   return NULL;
 }
 
@@ -48,9 +51,9 @@ main (int argc, char *argv[])
 {
   // Variables to obtain command line parameters
   unsigned int seed = 1;
-  int p = 100000000;
+  p = 1000000;
   int n_threads = 2;
-  int max_iters = 10;
+  int max_iters = 20;
   // Variables to perform SAXPY operation
   int i;
   // Variables to get execution time
@@ -134,25 +137,20 @@ main (int argc, char *argv[])
    */
 
   pthread_t tid[n_threads];
-  int m = p / n_threads;
+  int w = max_iters / n_threads;
 
   gettimeofday (&t_start, NULL);
   //SAXPY iterative SAXPY mfunction
-  for (it = 0; it < max_iters; it++)
-    {
-      for (i = 0; i < n_threads; i++)
-	{
-	  int *buf = malloc (sizeof (int) * 2);
-	  buf[0] = i * m;
-	  buf[1] = i * m + m;
-	  pthread_create (&tid[i], NULL, saxpy, (void *) buf);
-	}
-      for (i = 0; i < n_threads; i++)
-	{
-	  pthread_join (tid[i], NULL);
-	}
-      Y_avgs[it] = Y_avgs[it] / p;
-    }
+  for (i = 0; i < n_threads; i++)
+  {
+      int *buf = (int *) malloc (sizeof (int) * 2);
+      buf[0] = i * w;
+      buf[1] = i * w + w;
+      pthread_create (&tid[i], NULL, saxpy, (void *) buf);
+  }
+  for (i = 0; i < n_threads; i++) {
+      pthread_join (tid[i], NULL);
+  }
   gettimeofday (&t_end, NULL);
 
 #ifdef DEBUG
