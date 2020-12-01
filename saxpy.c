@@ -16,23 +16,65 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include <sys/time.h>
+
+sem_t s;
+
+double *X, *Y, *Y_avgs, a;
+int p;
+
+void * thread_a (void *arg)
+{
+    int *buf, min, max, i;
+
+    buf = (int *) arg;
+    min = buf[0];
+    max = buf[1];
+	for(; min < max; min++){
+        for(i = 0; i < p; i++){
+            Y[i] = Y[i] + a * X[i];
+            Y_avgs[min] += Y[i];
+            //printf("Y[%d] = %f\n", i, Y[i]);
+            sem_post(&s);
+        }
+        Y_avgs[min] = Y_avgs[min] / p;
+	}
+    return NULL;
+}
+
+void * thread_b (void *arg)
+{
+    int *buf, min, max, i;
+
+    buf = (int *) arg;
+    min = buf[0];
+    max = buf[1];
+	for(; min < max; min++){
+        for(i = 0; i < p; i++){
+            sem_wait(&s);
+            Y[i] = Y[i] + a * X[i];
+            Y_avgs[min] += Y[i]; 
+            //printf("Y[%d] = %f\n", i, Y[i]);
+        }
+        Y_avgs[min] = Y_avgs[min] / p;
+	}
+    return NULL;
+}
+
 
 int main(int argc, char* argv[]){
 	// Variables to obtain command line parameters
 	unsigned int seed = 1;
-  	int p = 10000000;
   	int n_threads = 2;
-  	int max_iters = 1000;
-  	// Variables to perform SAXPY operation
-	double* X;
-	double a;
-	double* Y;
-	double* Y_avgs;
-	int i, it;
+  	int max_iters = 10000;
+    int i;
 	// Variables to get execution time
 	struct timeval t_start, t_end;
 	double exec_time;
+
+  	p = 100;
 
 	// Getting input values
 	int opt;
@@ -101,15 +143,29 @@ int main(int argc, char* argv[]){
 	/*
 	 *	Function to parallelize 
 	 */
+
+    pthread_t t1, t2;
+    int *buf, m;
+
+    sem_init (&s, 0, 0);
+    m = max_iters / n_threads;
+
 	gettimeofday(&t_start, NULL);
 	//SAXPY iterative SAXPY mfunction
-	for(it = 0; it < max_iters; it++){
-		for(i = 0; i < p; i++){
-			Y[i] = Y[i] + a * X[i];
-			Y_avgs[it] += Y[i];
-		}
-		Y_avgs[it] = Y_avgs[it] / p;
-	}
+
+    buf = (int *) malloc(sizeof(int)*2);
+    buf[0] = 0;
+    buf[1] = m;
+    pthread_create (&t1, NULL, thread_a, (void*) buf);
+
+    buf = (int *) malloc(sizeof(int)*2);
+    buf[0] = m;
+    buf[1] = 2*m;
+    pthread_create (&t2, NULL, thread_b, (void*) buf);
+
+    pthread_join (t1, NULL);
+    pthread_join (t2, NULL);
+
 	gettimeofday(&t_end, NULL);
 
 #ifdef DEBUG
