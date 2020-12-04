@@ -20,26 +20,28 @@
 #include <sys/time.h>
 
 pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
-double *X, *Y, *Y_avgs;
-double a;
-int it;
+double *X, *Y, *Y_avgs, a;
+int it, p;
 
 void *
 saxpy (void *arg)
 {
-  int *buf;
-  int min, max;
+  int *buf, min, max;
+  double tmp;
 
   buf = (int *) arg;
   min = buf[0];
   max = buf[1];
+  tmp = 0.0;
   for (; min < max; min++)
     {
       Y[min] = Y[min] + a * X[min];
-      pthread_mutex_lock (&mx);
-      Y_avgs[it] += Y[min];
-      pthread_mutex_unlock (&mx);
+      tmp += Y[min];
     }
+  pthread_mutex_lock (&mx);
+  Y_avgs[it] += tmp / p;
+  pthread_mutex_unlock (&mx);
+  free (buf);
   return NULL;
 }
 
@@ -48,7 +50,7 @@ main (int argc, char *argv[])
 {
   // Variables to obtain command line parameters
   unsigned int seed = 1;
-  int p = 100000000;
+  p = 10000000;
   int n_threads = 2;
   int max_iters = 10;
   // Variables to perform SAXPY operation
@@ -151,7 +153,6 @@ main (int argc, char *argv[])
 	{
 	  pthread_join (tid[i], NULL);
 	}
-      Y_avgs[it] = Y_avgs[it] / p;
     }
   gettimeofday (&t_end, NULL);
 
