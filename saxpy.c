@@ -34,7 +34,7 @@ saxpy (void *arg)
   double tmp;
 
   buf = (int *) arg;
-  i = buf[0];
+  i   = buf[0];
   max = buf[1];
   tmp = 0.0;
   while (++i < max)
@@ -56,7 +56,7 @@ main (int argc, char *argv[])
   unsigned int seed = 1;
   p = 10000000;
   int n_threads = 2;
-  int max_iters = 10;
+  int max_iters = 20;
   // Variables to perform SAXPY operation
   int i;
   // Variables to get execution time
