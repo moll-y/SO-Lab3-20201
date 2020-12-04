@@ -19,30 +19,33 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
-double *X, *Y, *Y_avgs, a;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+double *X, *Y, *Y_avgs;
+
+double a;
+
 int it, p;
 
 void *
 saxpy (void *arg)
 {
-  int *buf;
-  int min, max, i;
+  int *buf, i, max;
+  double tmp;
 
   buf = (int *) arg;
-  min = buf[0];
+  i   = buf[0];
   max = buf[1];
-  for (; min < max; min++)
-  {
-      for (i = 0; i < p; i++)
-      {
-          pthread_mutex_lock (&mx);
-          Y[i] = Y[i] + a * X[i];
-          pthread_mutex_unlock (&mx);
-          Y_avgs[min] += Y[i];
-      }
-      Y_avgs[min] = Y_avgs[min] / p;
-  }
+  tmp = 0.0;
+  while (++i < max)
+    {
+      Y[i] = Y[i] + a * X[i];
+      tmp += Y[i];
+    }
+  pthread_mutex_lock (&lock);
+  Y_avgs[it] += tmp / p;
+  pthread_mutex_unlock (&lock);
+  free (buf);
   return NULL;
 }
 
@@ -51,7 +54,7 @@ main (int argc, char *argv[])
 {
   // Variables to obtain command line parameters
   unsigned int seed = 1;
-  p = 1000000;
+  p = 10000000;
   int n_threads = 2;
   int max_iters = 20;
   // Variables to perform SAXPY operation
@@ -137,20 +140,27 @@ main (int argc, char *argv[])
    */
 
   pthread_t tid[n_threads];
-  int w = max_iters / n_threads;
+  int m = p / n_threads;
 
   gettimeofday (&t_start, NULL);
   //SAXPY iterative SAXPY mfunction
-  for (i = 0; i < n_threads; i++)
-  {
-      int *buf = (int *) malloc (sizeof (int) * 2);
-      buf[0] = i * w;
-      buf[1] = i * w + w;
-      pthread_create (&tid[i], NULL, saxpy, (void *) buf);
-  }
-  for (i = 0; i < n_threads; i++) {
-      pthread_join (tid[i], NULL);
-  }
+  for (it = 0; it < max_iters; it++)
+    {
+      for (i = 0; i < n_threads; i++)
+	{
+	  int *buf = malloc (sizeof (int) * 2);
+	  buf[0] = i * m;
+	  buf[1] = buf[0] + m;
+	  pthread_create (&tid[i], NULL, saxpy, buf);
+	  /* 
+	   * free(buf) is doing inside of saxpy()
+	   */
+	}
+      for (i = 0; i < n_threads; i++)
+	{
+	  pthread_join (tid[i], NULL);
+	}
+    }
   gettimeofday (&t_end, NULL);
 
 #ifdef DEBUG
