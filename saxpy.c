@@ -19,28 +19,32 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
-double *X, *Y, *Y_avgs, a;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+double *X, *Y, *Y_avgs;
+
+double a;
+
 int it, p;
 
 void *
 saxpy (void *arg)
 {
-  int *buf, min, max;
+  int *buf, i, max;
   double tmp;
 
   buf = (int *) arg;
-  min = buf[0];
+  i = buf[0];
   max = buf[1];
   tmp = 0.0;
-  for (; min < max; min++)
+  while (++i < max)
     {
-      Y[min] = Y[min] + a * X[min];
-      tmp += Y[min];
+      Y[i] = Y[i] + a * X[i];
+      tmp += Y[i];
     }
-  pthread_mutex_lock (&mx);
+  pthread_mutex_lock (&lock);
   Y_avgs[it] += tmp / p;
-  pthread_mutex_unlock (&mx);
+  pthread_mutex_unlock (&lock);
   free (buf);
   return NULL;
 }
@@ -146,8 +150,11 @@ main (int argc, char *argv[])
 	{
 	  int *buf = malloc (sizeof (int) * 2);
 	  buf[0] = i * m;
-	  buf[1] = i * m + m;
-	  pthread_create (&tid[i], NULL, saxpy, (void *) buf);
+	  buf[1] = buf[0] + m;
+	  pthread_create (&tid[i], NULL, saxpy, buf);
+	  /* 
+	   * free(buf) is doing inside of saxpy()
+	   */
 	}
       for (i = 0; i < n_threads; i++)
 	{
