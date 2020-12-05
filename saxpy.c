@@ -34,13 +34,14 @@ saxpy (void *arg)
   double tmp;
 
   buf = (int *) arg;
-  i   = buf[0];
+  i = buf[0];
   max = buf[1];
   tmp = 0.0;
-  while (++i < max)
+  while (i < max)
     {
       Y[i] = Y[i] + a * X[i];
       tmp += Y[i];
+      ++i;
     }
   pthread_mutex_lock (&lock);
   Y_avgs[it] += tmp / p;
