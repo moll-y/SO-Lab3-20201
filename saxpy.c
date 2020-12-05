@@ -151,7 +151,7 @@ main (int argc, char *argv[])
 	{
 	  int *buf = malloc (sizeof (int) * 2);
 	  buf[0] = i * m;
-	  buf[1] = buf[0] + m;
+	  buf[1] = ((i + 1) == n_threads) ? p : buf[0] + m;
 	  pthread_create (&tid[i], NULL, saxpy, buf);
 	  /* 
 	   * free(buf) is doing inside of saxpy()
