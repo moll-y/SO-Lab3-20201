@@ -26,10 +26,7 @@ plt.xlabel('Number of cores/threads')
 plt.ylabel('Time (ms)') 
 plt.title('Parallel Execution') 
 
-plt.savefig("parallel.png")
-
-
-
+plt.savefig('parallel.png', dpi=400)
 
 
 #plt.clf()
