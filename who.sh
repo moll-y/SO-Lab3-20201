@@ -20,15 +20,10 @@ test () {
 }
 
 main () {
-    test "data.txt" 10 10000000 1 50
-    test "data.txt" 10 10000000 2 50
-    test "data.txt" 10 10000000 3 50
-    test "data.txt" 10 10000000 4 50
-    test "data.txt" 10 10000000 5 50
-    test "data.txt" 10 10000000 6 50
-    test "data.txt" 10 10000000 7 50
-    test "data.txt" 10 10000000 8 50
-    test "data.txt" 10 10000000 9 50
+    test "data.txt" 20 10000000 1 1000
+    test "data.txt" 20 10000000 2 1000
+    test "data.txt" 20 10000000 4 1000
+    test "data.txt" 20 10000000 8 1000
     exit 0
 }
 
